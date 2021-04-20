@@ -1,4 +1,4 @@
-from Game import Game
+from Game import Game, GameError
 from abc import ABC, abstractmethod
 
 class Ui(ABC):
@@ -21,10 +21,26 @@ class Terminal(Ui):
     def run(self):
         while not self._game.winner:
             print(self._game)
-            row = int(input("Which row? "))
-            col = int(input("Which column? "))
-            self._game.play(row,col)
-
+            try:
+                row = int(input("Which row? "))
+                col = int(input("Which column? "))
+            except ValueError:
+                # Type check
+                print("Invalid Input: Non numeric")
+                continue
+            # Range check
+            if 1 <= row <= 3 and 1 <= col <= 3:
+                try:
+                    self._game.play(row,col)
+                except GameError:
+                    print("Invalid Input")
+            else:
+                print("Invalid Input: Must be between 1 and 3")
+            
+            
         print(self._game)
         w = self._game.winner
-        print(f"The winner was {w}")
+        if self._game.winner == Game.DRAW:
+            print("The game was drawn")
+        else:
+            print(f"The winner was {w}")
