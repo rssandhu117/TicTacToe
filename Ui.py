@@ -1,7 +1,7 @@
 from Game import Game, GameError
 from abc import ABC, abstractmethod
 from itertools import product
-from tkinter import Button, Tk, Frame, X, Toplevel, StringVar, Text, Scrollbar, LEFT, RIGHT, Y, END, Grid, N, S, W, E
+from tkinter import Button, Tk, Frame, X, Toplevel, StringVar, Text, Scrollbar, LEFT, RIGHT, Y, END, Grid, N, S, W, E, Message
 
 class Ui(ABC):
 
@@ -42,15 +42,43 @@ class Gui(Ui):
         
         self.__root = root
         self.__console = console
+        self.__GameInProgress = False
+        self.__HelpOpen = False
+        
+        
+    def _dismiss_help(self):
+        self.__HelpOpen = False
+        self.__help_win.destroy()
         
     def _help_callback(self):
-        pass
-    
+        if self.__HelpOpen:
+            return
+        self.__HelpOpen = True
+        help_win = Toplevel(self.__root)
+        help_win.title("Help")
+        help_text = "Get 3 in a row to win"
+        Message(help_win, text=help_text).pack(fill=X)
+        self.__help_win = help_win
+        
+        Button(help_win, text="Dismiss", command=self._dismiss_help).pack(fill=X)
+
+
+
+    def _dismiss_game(self):
+        self.__GameInProgress = False
+        self.__game_win.destroy()
+        
+        
     def _play_callback(self):
+        if self.__GameInProgress:
+            return
+        self.__GameInProgress = True
+        self.__Finished = False
         self.__game = Game()
         game_win = Toplevel(self.__root)
         game_win.title("Game")
         frame = Frame(game_win)
+        self.__game_win = game_win
         
         # Resizing
         Grid.columnconfigure(game_win,0,weight=1)
@@ -58,7 +86,7 @@ class Gui(Ui):
         
         frame.grid(row=0,column=0, sticky=N+S+W+E)
         
-        Button(game_win, text="Dismiss", command=game_win.destroy).grid(row=1,column=0)
+        Button(game_win, text="Dismiss", command=self._dismiss_game).grid(row=1,column=0)
         
         # New games will overwrite buttons
         # Only 1 game at a time
@@ -80,6 +108,9 @@ class Gui(Ui):
             
         
     def __play_and_refresh(self,row,col):
+        if self.__Finished:
+            return  
+    
         try:
             self.__game.play(row+1,col+1)
         except GameError as e:
@@ -91,12 +122,12 @@ class Gui(Ui):
         
         w = self.__game.winner
         if w is not None:
+            self.__Finished = True
             if w is Game.DRAW:
                 self.__console.insert(END, "The game was drawn")
             else:
                 self.__console.insert(END, f"The winner was {w}\n")
                 
-        
         
     def _quit_callback(self):
         self.__root.quit()
